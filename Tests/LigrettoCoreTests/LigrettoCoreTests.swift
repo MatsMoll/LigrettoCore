@@ -7,13 +7,16 @@ class LigrettoDelegate: GameDelegate {
         case didFinnish
         case didAddPlayer
         case didStartNewRound
+        case didReset
         case none
     }
 
+    var gameResult: GameResult?
     var latestPath = Path.none
 
-    func didFinnish(_ game: Game) {
+    func didFinnish(_ game: Game, with result: GameResult) {
         latestPath = .didFinnish
+        gameResult = result
     }
 
     func didAddPlayer(in game: Game) {
@@ -22,6 +25,10 @@ class LigrettoDelegate: GameDelegate {
 
     func didStartNewRound(in game: Game) {
         latestPath = .didStartNewRound
+    }
+
+    func didReset(_ game: Game) {
+        latestPath = .didReset
     }
 
     func reset() {
@@ -91,6 +98,56 @@ final class LigrettoCoreTests: XCTestCase {
         XCTAssert(game.lastRound?.score(for: steffen) == nil)
 
         XCTAssert(delegate.latestPath == .didFinnish)
+        switch delegate.gameResult {
+        case .some(.winner(let player)): XCTAssertEqual(player, mats)
+        default: XCTFail("Incorrect winner")
+        }
+
+        game.reset()
+        XCTAssert(delegate.latestPath == .didReset)
+        delegate.reset()
+
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(ligrettoRound, for: steffen)
+        game.saveRound()
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(ligrettoRound, for: steffen)
+        game.saveRound()
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(ligrettoRound, for: steffen)
+        game.saveRound()
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(ligrettoRound, for: steffen)
+        game.saveRound()
+
+        XCTAssert(delegate.latestPath == .didFinnish)
+        switch delegate.gameResult {
+        case .some(.drawn(let players)): XCTAssertEqual(players, [mats, steffen])
+        default: XCTFail("Incorrect winner")
+        }
+
+        game.reset()
+        XCTAssert(delegate.latestPath == .didReset)
+        delegate.reset()
+
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(ligrettoRound, for: steffen)
+        game.saveRound()
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(ligrettoRound, for: steffen)
+        game.saveRound()
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(ligrettoRound, for: steffen)
+        game.saveRound()
+        game.registerRound(ligrettoRound, for: mats)
+        game.registerRound(dicentRound, for: steffen)
+        game.saveRound()
+
+        XCTAssert(delegate.latestPath == .didFinnish)
+        switch delegate.gameResult {
+        case .some(.winner(let player)): XCTAssertEqual(player, mats)
+        default: XCTFail("Incorrect winner")
+        }
     }
 
     static var allTests = [
