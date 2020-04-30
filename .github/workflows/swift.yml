@@ -13,9 +13,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      run: swift build -v
     - name: GitHub Action for Finch
       uses: MatsMoll/action-finch@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        GITHUB_SHA: ${{ secrets.GITHUB_SHA }}
+    - name: Build
+      run: swift build -v
     - name: Run tests
       run: swift test -v
