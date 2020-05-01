@@ -6,7 +6,7 @@ contributors:
     handle: MatsMoll
   contributor_handle_prefix: '@'
 git:
-  repo_base_url: 
+  repo_base_url: https://github.com/MatsMoll/LigrettoCore
 format:
   delimiters:
     input:
