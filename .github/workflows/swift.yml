@@ -19,6 +19,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
         GITHUB_SHA: ${{ secrets.GITHUB_SHA }}
+        FINCH_CONFIG: "finch-config.yml"
     - name: Build
       run: swift build -v
     - name: Run tests
