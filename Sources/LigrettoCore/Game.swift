@@ -127,6 +127,8 @@ public class GameManager {
 
     public weak var delegate: GameDelegate?
 
+    public init() {}
+
     /// Register `PlayerStats` in the current round
     /// - Parameter stats: The stats for the round
     /// - Parameter player: The player to registrate the stats for
