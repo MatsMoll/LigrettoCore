@@ -119,6 +119,10 @@ public struct Game: Codable {
         }
         return scores.mapValues { standings[$0] ?? 0 }
     }
+
+    public func score(for player: Player) -> Int? {
+        totalScores[player]
+    }
 }
 
 public class GameManager {
