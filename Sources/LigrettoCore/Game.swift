@@ -30,7 +30,11 @@ public extension GameDelegate {
     func didReset(_ game: Game) {}
 }
 
-public struct Game: Codable {
+public struct Game: Codable, Identifiable {
+
+    public var id: UUID = .init()
+
+    public var createdAt: Date = .init()
 
     public internal(set) var players: Set<Player> = []
 
