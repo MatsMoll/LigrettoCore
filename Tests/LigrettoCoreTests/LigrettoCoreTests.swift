@@ -37,6 +37,19 @@ class LigrettoDelegate: GameDelegate {
 }
 
 final class LigrettoCoreTests: XCTestCase {
+
+    func testStandingTrendCodable() throws {
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        let downData = try encoder.encode(StandingTrend.down(3))
+        let upData = try encoder.encode(StandingTrend.up(3))
+        let sameData = try encoder.encode(StandingTrend.same)
+        try XCTAssertEqual(decoder.decode(StandingTrend.self, from: downData), .down(3))
+        try XCTAssertEqual(decoder.decode(StandingTrend.self, from: upData), .up(3))
+        try XCTAssertEqual(decoder.decode(StandingTrend.self, from: sameData), .same)
+    }
+
     func testExample() {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
@@ -45,10 +58,10 @@ final class LigrettoCoreTests: XCTestCase {
         let steffen = Player(name: "Steffen", color: .red)
 
         let delegate = LigrettoDelegate()
-        let game = Game()
+        let game = GameManager()
         game.delegate = delegate
 
-        XCTAssert(game.completedRounds.count == 0)
+        XCTAssert(game.game.completedRounds.count == 0)
 
         let dicentRound = PlayerStats(leftOverCards: 4, placedCards: 30)
         let ligrettoRound = PlayerStats(leftOverCards: 0, placedCards: 30)
@@ -60,8 +73,8 @@ final class LigrettoCoreTests: XCTestCase {
         game.add(mats)
         game.add(steffen)
 
-        XCTAssert(game.players.contains(mats))
-        XCTAssert(game.players.contains(steffen))
+        XCTAssert(game.game.players.contains(mats))
+        XCTAssert(game.game.players.contains(steffen))
 
         XCTAssert(delegate.latestPath == .didAddPlayer)
         delegate.reset()
@@ -71,9 +84,9 @@ final class LigrettoCoreTests: XCTestCase {
         game.registerRound(dicentRound, for: steffen)
         game.saveRound()
 
-        XCTAssert(game.lastRound?.playerWithLigretto() == mats)
-        XCTAssert(game.lastRound?.score(for: mats) == ligrettoRound.score)
-        XCTAssert(game.lastRound?.score(for: steffen) == dicentRound.score)
+        XCTAssert(game.game.lastRound?.playerWithLigretto() == mats)
+        XCTAssert(game.game.lastRound?.score(for: mats) == ligrettoRound.score)
+        XCTAssert(game.game.lastRound?.score(for: steffen) == dicentRound.score)
 
         XCTAssert(game.score(for: mats) == ligrettoRound.score)
         XCTAssert(game.score(for: steffen) == dicentRound.score)
@@ -81,7 +94,7 @@ final class LigrettoCoreTests: XCTestCase {
         XCTAssert(delegate.latestPath == .didStartNewRound)
         delegate.reset()
 
-        XCTAssert(game.completedRounds.count == 1)
+        XCTAssert(game.game.completedRounds.count == 1)
 
         game.registerRound(ligrettoRound, for: mats)
         game.saveRound()
@@ -94,8 +107,8 @@ final class LigrettoCoreTests: XCTestCase {
         game.registerRound(ligrettoRound, for: mats)
         game.saveRound()
 
-        XCTAssert(game.lastRound?.score(for: mats) == ligrettoRound.score)
-        XCTAssert(game.lastRound?.score(for: steffen) == nil)
+        XCTAssert(game.game.lastRound?.score(for: mats) == ligrettoRound.score)
+        XCTAssert(game.game.lastRound?.score(for: steffen) == nil)
 
         XCTAssert(delegate.latestPath == .didFinnish)
         switch delegate.gameResult {

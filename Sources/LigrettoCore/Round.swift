@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class Round {
+public class Round: Codable {
 
     internal var scores: [Player : PlayerStats] = [:]
 

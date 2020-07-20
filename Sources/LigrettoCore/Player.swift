@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct Player: Hashable {
+public struct Player: Codable, Hashable {
 
-    public enum Color: String, CaseIterable {
+    public enum Color: String, CaseIterable, Codable {
         case red
         case blue
         case lightBlue
@@ -38,7 +38,7 @@ public struct Player: Hashable {
 }
 
 
-public struct PlayerStats {
+public struct PlayerStats: Codable {
 
     public var leftOverCards: Int
     public var placedCards: Int

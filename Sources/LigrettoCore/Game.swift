@@ -30,9 +30,9 @@ public extension GameDelegate {
     func didReset(_ game: Game) {}
 }
 
-public class Game {
+public struct Game: Codable {
 
-    public private(set) var players: Set<Player> = []
+    public internal(set) var players: Set<Player> = []
 
     public var sortedPlayers: Array<Player> {
         totalScores
@@ -40,17 +40,15 @@ public class Game {
             .map { $0.key }
     }
 
-    public private(set) var completedRounds: [Round] = []
+    public internal(set) var completedRounds: [Round] = []
 
-    private var currentRound = Round()
+    internal var currentRound = Round()
 
-    private var totalScores: [Player : Int] = [:]
+    internal var totalScores: [Player : Int] = [:]
 
-    public private(set) var lastStandingTrend: [Player : StandingTrend] = [:]
+    public internal(set) var lastStandingTrend: [Player : StandingTrend] = [:]
 
     public var scoreGoal: Int = 100
-
-    public weak var delegate: GameDelegate?
 
     public var lastRound: Round? {
         completedRounds.last
@@ -65,90 +63,6 @@ public class Game {
     }
 
     public init() {}
-
-    /// Register `PlayerStats` in the current round
-    /// - Parameter stats: The stats for the round
-    /// - Parameter player: The player to registrate the stats for
-    public func registerRound(_ stats: PlayerStats, for player: Player) {
-        currentRound.register(stats, for: player)
-    }
-
-    /// Saves the current round
-    public func saveRound() {
-        guard !hasWinnere else { return notifyOfNewRound() }
-        guard currentRound.containsValidStats else { return }
-
-        completedRounds.append(currentRound)
-        for player in currentRound.players {
-            add(player)
-            totalScores[player] = (score(for: player) ?? 0) + (currentRound.score(for: player) ?? 0)
-        }
-        currentRound = Round()
-        lastStandingTrend = standingChange(in: completedRounds.count - 1)
-        
-        notifyOfNewRound()
-    }
-
-    private func notifyOfNewRound() {
-        if hasWinnere {
-            let potensialWinners = totalScores
-                .filter { $0.value >= self.scoreGoal }
-                .sorted(by: { $0.value > $1.value })
-            let winnerScore = potensialWinners.first?.value ?? 0
-            let winners = potensialWinners
-                .filter { $0.value == winnerScore }
-                .map { $0.key }
-
-            if winners.count > 1 {
-                delegate?.didFinnish(self, with: .drawn(winners))
-            } else {
-                delegate?.didFinnish(self, with: .winner(winners[0]))
-            }
-        } else {
-            delegate?.didStartNewRound(in: self)
-        }
-    }
-
-    /// Adds a player to the game
-    /// - Parameter player: The player to add
-    public func add(_ player: Player) {
-        guard !players.contains(player) else { return }
-        players.insert(player)
-        totalScores[player] = 0
-        delegate?.didAddPlayer(in: self)
-    }
-
-    public func change(_ oldPlayer: Player, to newPlayer: Player) {
-        guard !players.contains(newPlayer) else { return }
-        players.insert(newPlayer)
-        players.remove(oldPlayer)
-        totalScores[newPlayer] = totalScores[oldPlayer]
-        totalScores[oldPlayer] = nil
-        completedRounds.forEach { $0.change(oldPlayer, to: newPlayer) }
-        delegate?.didChange(oldPlayer, to: newPlayer, in: self)
-    }
-
-    public func remove(_ player: Player) {
-        players.remove(player)
-        totalScores[player] = nil
-        delegate?.didRemovePlayer(in: self)
-    }
-
-    public func score(for player: Player) -> Int? {
-        totalScores[player]
-    }
-
-    public func reset() {
-        totalScores = [:]
-        delegate?.didReset(self)
-    }
-
-    public func newGame() -> Game {
-        let new = Game()
-        players.forEach { new.add($0) }
-        new.scoreGoal = scoreGoal
-        return new
-    }
 
     public func currentStats(for player: Player) -> PlayerStats? {
         currentRound.stats(for: player)
@@ -204,6 +118,111 @@ public class Game {
             $0.merging([$1 : (sortedScores.firstIndex(of: $1) ?? 0) + 1], uniquingKeysWith: { $1 })
         }
         return scores.mapValues { standings[$0] ?? 0 }
+    }
+}
+
+public class GameManager {
+
+    public var game: Game = Game()
+
+    public weak var delegate: GameDelegate?
+
+    /// Register `PlayerStats` in the current round
+    /// - Parameter stats: The stats for the round
+    /// - Parameter player: The player to registrate the stats for
+    public func registerRound(_ stats: PlayerStats, for player: Player) {
+        game.currentRound.register(stats, for: player)
+    }
+
+    /// Saves the current round
+    public func saveRound() {
+        guard !game.hasWinnere else { return notifyOfNewRound() }
+        guard game.currentRound.containsValidStats else { return }
+
+        game.completedRounds.append(game.currentRound)
+        for player in game.currentRound.players {
+            add(player)
+            game.totalScores[player] = (score(for: player) ?? 0) + (game.currentRound.score(for: player) ?? 0)
+        }
+        game.currentRound = Round()
+        game.lastStandingTrend = game.standingChange(in: game.completedRounds.count - 1)
+
+        notifyOfNewRound()
+    }
+
+    private func notifyOfNewRound() {
+        if game.hasWinnere {
+            let potensialWinners = game.totalScores
+                .filter { $0.value >= self.game.scoreGoal }
+                .sorted(by: { $0.value > $1.value })
+            let winnerScore = potensialWinners.first?.value ?? 0
+            let winners = potensialWinners
+                .filter { $0.value == winnerScore }
+                .map { $0.key }
+
+            if winners.count > 1 {
+                delegate?.didFinnish(game, with: .drawn(winners))
+            } else {
+                delegate?.didFinnish(game, with: .winner(winners[0]))
+            }
+        } else {
+            delegate?.didStartNewRound(in: game)
+        }
+    }
+
+    /// Adds a player to the game
+    /// - Parameter player: The player to add
+    public func add(_ player: Player) {
+        guard !game.players.contains(player) else { return }
+        game.players.insert(player)
+        game.totalScores[player] = 0
+        delegate?.didAddPlayer(in: self.game)
+    }
+
+    public func change(_ oldPlayer: Player, to newPlayer: Player) {
+        guard !game.players.contains(newPlayer) else { return }
+        game.players.insert(newPlayer)
+        game.players.remove(oldPlayer)
+        game.totalScores[newPlayer] = game.totalScores[oldPlayer]
+        game.totalScores[oldPlayer] = nil
+        game.completedRounds.forEach { $0.change(oldPlayer, to: newPlayer) }
+        delegate?.didChange(oldPlayer, to: newPlayer, in: self.game)
+    }
+
+    public func remove(_ player: Player) {
+        game.players.remove(player)
+        game.totalScores[player] = nil
+        delegate?.didRemovePlayer(in: self.game)
+    }
+
+    public func score(for player: Player) -> Int? {
+        game.totalScores[player]
+    }
+
+    public func reset() {
+        game.totalScores = [:]
+        delegate?.didReset(self.game)
+    }
+
+    public func newGame() -> GameManager {
+        let new = GameManager()
+        new.delegate = delegate
+        game.players.forEach { new.add($0) }
+        new.game.scoreGoal = game.scoreGoal
+        return new
+    }
+
+
+    public func currentStats(for player: Player) -> PlayerStats? {
+        game.currentStats(for: player)
+    }
+
+    public func standing(for player: Player) -> Int? {
+        game.standing(for: player)
+    }
+
+    public func standingChange(in round: Int) -> [Player : StandingTrend] {
+        game.standingChange(in: round)
     }
 }
 
